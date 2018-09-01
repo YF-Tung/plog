@@ -1,6 +1,6 @@
 BIN := plog
 CC := g++
-CFLAGS := --std=c++11 -Ofast
+CFLAGS := --std=c++11 -Ofast -pthread
 
 SRC_DIR := src
 BIN_DIR := build
