@@ -14,23 +14,17 @@ using namespace std;
 
 class PipeText {
 public:
-    PipeText() : status(-1) {}
+    PipeText() {}
 
     int process(istream& is, ostream& os) {
+        m_flushed = false;
+        m_last_output_time = chrono::steady_clock::now();
         char c;
 
         thread thr(&PipeText::flush_if_idle, this);
 
         // Blocking read
-        while (is.get(c)) {
-            write_to_output(c, os);
-            status = 0;
-        }
-
-        {
-            lock_guard<mutex> guard(mutex_);
-            status = -2;
-        }
+        while (is.get(c)) write_to_output(c, os);
         thr.join();
         return 0;
     }
@@ -38,15 +32,11 @@ public:
 private:
     bool truncate_line = false;
     mutex mutex_;
-    static const int timeout;
+    static const chrono::seconds timeout;
     vector<char> buffer;
 
-    /* int status
-     * -2 : end of process
-     * -1 : already flushed and no new data input
-     * 0+ : seconds since last new data input
-     */
-    int status;
+    chrono::time_point<chrono::steady_clock> m_last_output_time;
+    bool m_flushed;
 
     void write_to_output(char c, ostream& os) {
         static const int TRUNCATE_EXTRA = 5;
@@ -72,23 +62,25 @@ private:
                 buffer.clear();
             }
         }
+        m_flushed = false;
+        m_last_output_time = chrono::steady_clock::now();
     }
     
     void flush_if_idle() {
         while (true) {
+            bool flushed;
+            chrono::time_point<chrono::steady_clock> last_output_time;
             {
                 lock_guard<mutex> guard(mutex_);
-                //unsigned val = status.load();
-                if (status == -2) break;
-                if (status != -1) {
-                    status++;
-                    if (status >= timeout) {
-                        status = -1;
-                        flush_page();
-                    }
-                }
+                flushed = m_flushed;
+                last_output_time = m_last_output_time;
             }
-            this_thread::sleep_for(chrono::milliseconds(1000));
+            if (flushed) this_thread::sleep_for(timeout);
+            else {
+                auto time_diff = chrono::steady_clock::now() - last_output_time;
+                if (time_diff > timeout) flush_page();
+                else this_thread::sleep_for(timeout - time_diff);
+            }
         }
     }
 
@@ -96,6 +88,8 @@ private:
     void flush_page() {
         int nrow_to_append = get_page_height();
         for (int i = 0; i < nrow_to_append; i++) cout<<endl;
+        lock_guard<mutex> guard(mutex_);
+        m_flushed = true;
     }
 
     int get_page_height() const {
@@ -112,7 +106,7 @@ private:
 };
 
 // Static variable
-const int PipeText::timeout = 60;
+const chrono::seconds PipeText::timeout = chrono::seconds(60);
 
 
 int show_usage(char bin_name[]) {
