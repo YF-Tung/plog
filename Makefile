@@ -19,7 +19,7 @@ plog.o: ${SRC_DIR}/plog.cpp
 	${CC} ${CFLAGS} $^ -c -o ${OBJ_DIR}/$@
 	
 # Test
-test:   plog
+test:   clean plog
 	@mkdir -p ${OBJ_DIR}
 	@git submodule init
 	@git submodule update
