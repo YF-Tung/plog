@@ -1,3 +1,5 @@
+#ifndef PLOG_H_
+#define PLOG_H_
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -10,26 +12,24 @@
 #include <unistd.h>
 #include <getopt.h>
 
-using namespace std;
-
 class PipeText {
 public:
     PipeText();
 
-    int process(istream&, ostream&);
+    int process(std::istream&, std::ostream&);
 
     void set_truncate_line(bool b);
 
 private:
     bool truncate_line = false;
-    mutex mutex_;
-    static const chrono::seconds timeout;
-    vector<char> buffer;
+    std::mutex mutex_;
+    static const std::chrono::seconds timeout;
+    std::vector<char> buffer;
 
-    chrono::time_point<chrono::steady_clock> m_last_output_time;
+    std::chrono::time_point<std::chrono::steady_clock> m_last_output_time;
     bool m_flushed;
 
-    void write_to_output(char c, ostream& os); 
+    void write_to_output(char c, std::ostream& os); 
     void flush_if_idle();
 
     // Already locked
@@ -39,4 +39,6 @@ private:
 
     int get_page_width() const;
 };
+
+#endif  //PLOG_H_
 

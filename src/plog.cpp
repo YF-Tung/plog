@@ -2,12 +2,12 @@
 
 PipeText::PipeText() {}
 
-int PipeText::process(istream& is, ostream& os) {
+int PipeText::process(std::istream& is, std::ostream& os) {
     m_flushed = false;
-    m_last_output_time = chrono::steady_clock::now();
+    m_last_output_time = std::chrono::steady_clock::now();
     char c;
 
-    thread thr(&PipeText::flush_if_idle, this);
+    std::thread thr(&PipeText::flush_if_idle, this);
 
     // Blocking read
     while (is.get(c)) write_to_output(c, os);
@@ -16,11 +16,11 @@ int PipeText::process(istream& is, ostream& os) {
 }
 void PipeText::set_truncate_line(bool b) { truncate_line = b; }
 
-void PipeText::write_to_output(char c, ostream& os) {
+void PipeText::write_to_output(char c, std::ostream& os) {
     static const int TRUNCATE_EXTRA = 5;
     static const int MIN_PRINT_LEN = 5;
     if (!truncate_line) {
-        lock_guard<mutex> guard(mutex_);
+        std::lock_guard<std::mutex> guard(mutex_);
         os << c;
     } else {
         buffer.push_back(c);
@@ -34,30 +34,30 @@ void PipeText::write_to_output(char c, ostream& os) {
                 if (to_skip > buffer.size() - MIN_PRINT_LEN)
                     to_skip = buffer.size() - MIN_PRINT_LEN;
             }
-            lock_guard<mutex> guard(mutex_);
+            std::lock_guard<std::mutex> guard(mutex_);
             if (to_skip > 0) os << "... ";
             for (int i = to_skip; i < buffer.size(); i++) os << buffer[i];
             buffer.clear();
         }
     }
     m_flushed = false;
-    m_last_output_time = chrono::steady_clock::now();
+    m_last_output_time = std::chrono::steady_clock::now();
 }
 
 void PipeText::flush_if_idle() {
     while (true) {
         bool flushed;
-        chrono::time_point<chrono::steady_clock> last_output_time;
+        std::chrono::time_point<std::chrono::steady_clock> last_output_time;
         {
-            lock_guard<mutex> guard(mutex_);
+            std::lock_guard<std::mutex> guard(mutex_);
             flushed = m_flushed;
             last_output_time = m_last_output_time;
         }
-        if (flushed) this_thread::sleep_for(timeout);
+        if (flushed) std::this_thread::sleep_for(timeout);
         else {
-            auto time_diff = chrono::steady_clock::now() - last_output_time;
+            auto time_diff = std::chrono::steady_clock::now() - last_output_time;
             if (time_diff > timeout) flush_page();
-            else this_thread::sleep_for(timeout - time_diff);
+            else std::this_thread::sleep_for(timeout - time_diff);
         }
     }
 }
@@ -65,8 +65,8 @@ void PipeText::flush_if_idle() {
 // Already locked
 void PipeText::flush_page() {
     int nrow_to_append = get_page_height();
-    for (int i = 0; i < nrow_to_append; i++) cout<<endl;
-    lock_guard<mutex> guard(mutex_);
+    for (int i = 0; i < nrow_to_append; i++) std::cout<<std::endl;
+    std::lock_guard<std::mutex> guard(mutex_);
     m_flushed = true;
 }
 
@@ -83,11 +83,11 @@ int PipeText::get_page_width() const {
 }
 
 // Static variable
-const chrono::seconds PipeText::timeout = chrono::seconds(60);
+const std::chrono::seconds PipeText::timeout = std::chrono::seconds(60);
 
 
 int show_usage(char bin_name[]) {
-    cerr << "Usage: " << bin_name << " [-t]" << endl;
+    std::cerr << "Usage: " << bin_name << " [-t]" << std::endl;
     return 1;
 }
 
@@ -103,6 +103,6 @@ int main(int argc, char** argv) {
                 return show_usage(argv[0]);
         }
     }
-    return pipe_text.process(cin, cout);
+    return pipe_text.process(std::cin, std::cout);
 }
 
