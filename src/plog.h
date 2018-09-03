@@ -12,6 +12,8 @@
 #include <unistd.h>
 #include <getopt.h>
 
+namespace plog {
+
 class PipeText {
 public:
     PipeText();
@@ -40,5 +42,6 @@ private:
     int get_page_width() const;
 };
 
+} // namespace plog
 #endif  //PLOG_H_
 

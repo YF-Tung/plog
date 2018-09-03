@@ -8,25 +8,33 @@ TEST_DIR := test
 OBJ_DIR := obj
 GTEST_DIR := googletest/googletest
 
+CPPS := $(notdir $(wildcard ${SRC_DIR}/*.cpp))
+OBJS := $(patsubst %.cpp, %.o, ${CPPS})
+
+
 # Binaries
-plog:    plog.o
+plog:    ${OBJS}
 	@mkdir -p ${BIN_DIR}
-	${CC} ${CFLAGS} ${OBJ_DIR}/$^ -o ${BIN_DIR}/$@
+	${CC} ${CFLAGS} $(addprefix ${OBJ_DIR}/, $^) -o ${BIN_DIR}/$@
 
 # Objs
-plog.o: ${SRC_DIR}/plog.cpp
+%.o:    ${SRC_DIR}/%.cpp
 	@mkdir -p ${OBJ_DIR}
 	${CC} ${CFLAGS} $^ -c -o ${OBJ_DIR}/$@
-	
+
 # Test
-test:   clean plog
+test:   clean plog libgtest.a
 	@mkdir -p ${OBJ_DIR}
+	${CC} ${CFLAGS} -isystem ${GTEST_DIR}/include ${TEST_DIR}/* ${OBJ_DIR}/libgtest.a -o ${BIN_DIR}/test
+	@${BIN_DIR}/test
+
+# Third party googletest
+libgtest.a:
 	@git submodule init
 	@git submodule update
 	${CC} -isystem ${GTEST_DIR}/include -I${GTEST_DIR} -pthread -c ${GTEST_DIR}/src/gtest-all.cc -o ${OBJ_DIR}/gtest-all.o
 	ar -rv ${OBJ_DIR}/libgtest.a ${OBJ_DIR}/gtest-all.o
-	${CC} -isystem ${GTEST_DIR}/include -pthread ${TEST_DIR}/* ${OBJ_DIR}/libgtest.a -o ${BIN_DIR}/test
-	@${BIN_DIR}/test
+
 
 # Install script, may need sudo permission
 install:    plog

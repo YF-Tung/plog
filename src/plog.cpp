@@ -1,5 +1,7 @@
 #include "plog.h"
 
+namespace plog {
+
 PipeText::PipeText() {}
 
 int PipeText::process(std::istream& is, std::ostream& os) {
@@ -85,24 +87,5 @@ int PipeText::get_page_width() const {
 // Static variable
 const std::chrono::seconds PipeText::timeout = std::chrono::seconds(60);
 
-
-int show_usage(char bin_name[]) {
-    std::cerr << "Usage: " << bin_name << " [-t]" << std::endl;
-    return 1;
-}
-
-int main(int argc, char** argv) {
-    PipeText pipe_text;
-    int opt;
-    while ((opt = getopt(argc, argv, "t")) != -1) {
-        switch (opt) {
-            case 't':
-                pipe_text.set_truncate_line(true);
-                break;
-            default: /* '?' */
-                return show_usage(argv[0]);
-        }
-    }
-    return pipe_text.process(std::cin, std::cout);
-}
+} // namespace plog
 
