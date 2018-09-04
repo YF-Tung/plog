@@ -10,30 +10,34 @@ GTEST_DIR := googletest/googletest
 INCLUDE := -I${SRC_DIR}
 
 CPPS := $(notdir $(wildcard ${SRC_DIR}/*.cpp))
-OBJS := $(patsubst %.cpp, %.o, ${CPPS})
-OBJS_TEST := $(filter-out main.o, ${OBJS})  # Exclude main.o for testing
+OBJS := $(addprefix ${OBJ_DIR}/, $(patsubst %.cpp, %.o, ${CPPS}))
+OBJS_TEST := $(filter-out ${OBJ_DIR}/main.o, ${OBJS})  # Exclude main.o for testing
 
+.PHONY: plog test install clean
 
 # Binaries
-plog:    ${OBJS}
+plog:   ${BIN_DIR}/${BIN}
+${BIN_DIR}/${BIN}:    ${OBJS}
 	@mkdir -p ${BIN_DIR}
-	${CC} ${CFLAGS} $(addprefix ${OBJ_DIR}/, $^) -o ${BIN_DIR}/$@
+	${CC} ${CFLAGS} $^ -o $@
 
 # Objs
-%.o:    ${SRC_DIR}/%.cpp
+${OBJ_DIR}/%.o:    ${SRC_DIR}/$(notdir %.cpp)
 	@mkdir -p ${OBJ_DIR}
-	${CC} ${CFLAGS} $^ -c -o ${OBJ_DIR}/$@
+	${CC} ${CFLAGS} $^ -c -o $@
 
 # Test
-test:   clean plog libgtest.a
+test: build_test
+	@${BIN_DIR}/test
+build_test: ${BIN_DIR}/test
+${BIN_DIR}/test:   plog libgtest.a
 	@mkdir -p ${OBJ_DIR}
 	${CC} ${CFLAGS} ${INCLUDE} -isystem ${GTEST_DIR}/include \
-            ${TEST_DIR}/* ${OBJ_DIR}/libgtest.a \
-            $(addprefix ${OBJ_DIR}/, ${OBJS_TEST}) -o ${BIN_DIR}/test
-	@${BIN_DIR}/test
+            ${TEST_DIR}/* ${OBJ_DIR}/libgtest.a ${OBJS_TEST} -o $@
 
 # Third party googletest
-libgtest.a:
+libgtest.a: ${OBJ_DIR}/libgtest.a
+${OBJ_DIR}/libgtest.a:
 	@git submodule init
 	@git submodule update
 	${CC} -isystem ${GTEST_DIR}/include -I${GTEST_DIR} -pthread -c ${GTEST_DIR}/src/gtest-all.cc -o ${OBJ_DIR}/gtest-all.o
