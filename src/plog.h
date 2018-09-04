@@ -28,6 +28,7 @@ protected:
     std::chrono::milliseconds timeout = std::chrono::milliseconds(60000);
     std::vector<char> buffer;
     std::ostream* m_pos = nullptr;
+    bool m_stop = false;
 
     std::chrono::time_point<std::chrono::steady_clock> m_last_output_time;
     bool m_flushed;

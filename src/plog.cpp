@@ -14,6 +14,7 @@ int PipeText::process(std::istream& is, std::ostream& os) {
 
     // Blocking read
     while (is.get(c)) write_to_output(c);
+    m_stop = true;
     thr.join();
     m_pos = nullptr;
     return 0;
@@ -50,7 +51,7 @@ void PipeText::write_to_output(char c) {
 }
 
 void PipeText::flush_if_idle() {
-    while (true) {
+    while (!m_stop) {
         bool flushed;
         std::chrono::time_point<std::chrono::steady_clock> last_output_time;
         {
