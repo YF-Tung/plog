@@ -7,9 +7,11 @@ BIN_DIR := build
 TEST_DIR := test
 OBJ_DIR := obj
 GTEST_DIR := googletest/googletest
+INCLUDE := -I${SRC_DIR}
 
 CPPS := $(notdir $(wildcard ${SRC_DIR}/*.cpp))
 OBJS := $(patsubst %.cpp, %.o, ${CPPS})
+OBJS_TEST := $(filter-out main.o, ${OBJS})  # Exclude main.o for testing
 
 
 # Binaries
@@ -25,7 +27,9 @@ plog:    ${OBJS}
 # Test
 test:   clean plog libgtest.a
 	@mkdir -p ${OBJ_DIR}
-	${CC} ${CFLAGS} -isystem ${GTEST_DIR}/include ${TEST_DIR}/* ${OBJ_DIR}/libgtest.a -o ${BIN_DIR}/test
+	${CC} ${CFLAGS} ${INCLUDE} -isystem ${GTEST_DIR}/include \
+            ${TEST_DIR}/* ${OBJ_DIR}/libgtest.a \
+            $(addprefix ${OBJ_DIR}/, ${OBJS_TEST}) -o ${BIN_DIR}/test
 	@${BIN_DIR}/test
 
 # Third party googletest

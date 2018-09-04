@@ -22,16 +22,17 @@ public:
 
     void set_truncate_line(bool b);
 
-private:
+protected:
     bool truncate_line = false;
     std::mutex mutex_;
-    static const std::chrono::seconds timeout;
+    std::chrono::milliseconds timeout = std::chrono::milliseconds(60000);
     std::vector<char> buffer;
+    std::ostream* m_pos = nullptr;
 
     std::chrono::time_point<std::chrono::steady_clock> m_last_output_time;
     bool m_flushed;
 
-    void write_to_output(char c, std::ostream& os); 
+    void write_to_output(char c); 
     void flush_if_idle();
 
     // Already locked

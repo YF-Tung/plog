@@ -6,19 +6,22 @@ PipeText::PipeText() {}
 
 int PipeText::process(std::istream& is, std::ostream& os) {
     m_flushed = false;
+    m_pos = &os;
     m_last_output_time = std::chrono::steady_clock::now();
     char c;
 
     std::thread thr(&PipeText::flush_if_idle, this);
 
     // Blocking read
-    while (is.get(c)) write_to_output(c, os);
+    while (is.get(c)) write_to_output(c);
     thr.join();
+    m_pos = nullptr;
     return 0;
 }
 void PipeText::set_truncate_line(bool b) { truncate_line = b; }
 
-void PipeText::write_to_output(char c, std::ostream& os) {
+void PipeText::write_to_output(char c) {
+    std::ostream& os = *m_pos;
     static const int TRUNCATE_EXTRA = 5;
     static const int MIN_PRINT_LEN = 5;
     if (!truncate_line) {
@@ -66,8 +69,9 @@ void PipeText::flush_if_idle() {
 
 // Already locked
 void PipeText::flush_page() {
+    std::ostream& os = *m_pos;
     int nrow_to_append = get_page_height();
-    for (int i = 0; i < nrow_to_append; i++) std::cout<<std::endl;
+    for (int i = 0; i < nrow_to_append; i++) os<<std::endl;
     std::lock_guard<std::mutex> guard(mutex_);
     m_flushed = true;
 }
@@ -83,9 +87,6 @@ int PipeText::get_page_width() const {
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     return w.ws_col;
 }
-
-// Static variable
-const std::chrono::seconds PipeText::timeout = std::chrono::seconds(60);
 
 } // namespace plog
 
